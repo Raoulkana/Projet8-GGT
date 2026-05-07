@@ -1,0 +1,70 @@
+<template>
+    <lightning-card title="Gestion des Voyages" icon-name="standard:opportunity">
+
+        <div class="slds-p-around_medium">
+
+            <!-- Nom du voyage -->
+            <lightning-input
+                label="Nom du voyage"
+                value={tripName}
+                onchange={handleNameChange}>
+            </lightning-input>
+
+            <!-- Stage -->
+            <lightning-combobox
+                label="Statut"
+                value={stage}
+                options={stageOptions}
+                onchange={handleStageChange}>
+            </lightning-combobox>
+
+            <!-- Date -->
+            <lightning-input
+                type="date"
+                label="Date de fin"
+                value={closeDate}
+                onchange={handleCloseDateChange}>
+            </lightning-input>
+
+            <!-- Description -->
+            <lightning-textarea
+                label="Description"
+                value={description}
+                onchange={handleDescriptionChange}>
+            </lightning-textarea>
+
+            <!-- Boutons -->
+            <div class="slds-m-top_medium">
+
+                <lightning-button
+                    variant="brand"
+                    label="Créer un voyage"
+                    onclick={createTripHandler}>
+                </lightning-button>
+
+                <lightning-button
+                    class="slds-m-left_small"
+                    variant="destructive"
+                    label="Supprimer"
+                    onclick={deleteTripHandler}>
+                </lightning-button>
+
+            </div>
+
+            <!-- Message -->
+            <template if:true={message}>
+                <div class="slds-m-top_medium slds-text-color_success">
+                    {message}
+                </div>
+            </template>
+
+            <!-- Erreur -->
+            <template if:true={error}>
+                <div class="slds-m-top_medium slds-text-color_error">
+                    {error}
+                </div>
+            </template>
+
+        </div>
+    </lightning-card>
+</template>
