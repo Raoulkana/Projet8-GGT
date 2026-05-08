@@ -7,13 +7,8 @@ public class TripManagerTest {
      * =========================
      */
     private static Account createTestAccount() {
-
-        Account acc = new Account(
-            Name = 'Test Account'
-        );
-
+        Account acc = new Account(Name = 'Test Account');
         insert acc;
-
         return acc;
     }
 
@@ -39,48 +34,24 @@ public class TripManagerTest {
 
         Test.stopTest();
 
-        Opportunity createdTrip = [
-
-            SELECT Id,
-                   Name,
-                   StageName,
-                   CloseDate,
-                   Description,
-                   AccountId
-            FROM Opportunity
-            WHERE Id = :trip.Id
-        ];
-
-        System.assertNotEquals(null, createdTrip);
-
-        System.assertEquals(
-            'Trip Paris',
-            createdTrip.Name
-        );
-
-        System.assertEquals(
-            'Prospecting',
-            createdTrip.StageName
-        );
-
-        System.assertEquals(
-            'Voyage à Paris',
-            createdTrip.Description
-        );
-
-        System.assertEquals(
-            acc.Id,
-            createdTrip.AccountId
-        );
+        System.assertNotEquals(null, trip.Id);
+        System.assertEquals('Trip Paris', trip.Name);
+        System.assertEquals('Prospecting', trip.StageName);
+        System.assertEquals('Voyage à Paris', trip.Description);
+        System.assertEquals(acc.Id, trip.AccountId);
     }
 
+    /*
+     * =========================
+     * CREATE TRIP - NO NAME
+     * =========================
+     */
     @isTest
     static void testCreateTripWithoutName() {
 
         Account acc = createTestAccount();
 
         try {
-
             Test.startTest();
 
             TripManager.createTrip(
@@ -92,11 +63,9 @@ public class TripManagerTest {
             );
 
             Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
+            System.assert(false, 'Exception attendue');
+        }
+        catch (AuraHandledException e) {
             System.assertEquals(
                 'Trip Name is required',
                 e.getMessage()
@@ -104,13 +73,17 @@ public class TripManagerTest {
         }
     }
 
+    /*
+     * =========================
+     * CREATE TRIP - PAST DATE
+     * =========================
+     */
     @isTest
     static void testCreateTripWithPastDate() {
 
         Account acc = createTestAccount();
 
         try {
-
             Test.startTest();
 
             TripManager.createTrip(
@@ -122,11 +95,9 @@ public class TripManagerTest {
             );
 
             Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
+            System.assert(false, 'Exception attendue');
+        }
+        catch (AuraHandledException e) {
             System.assertEquals(
                 'Close Date cannot be in the past',
                 e.getMessage()
@@ -151,54 +122,40 @@ public class TripManagerTest {
             CloseDate = Date.today().addDays(5),
             Description = 'Old Description'
         );
-
         insert trip;
 
         Test.startTest();
 
-        Opportunity updatedTrip =
-            TripManager.updateTrip(
-                trip.Id,
-                'Updated Trip',
-                'Qualification',
-                Date.today().addDays(20),
-                'New Description'
-            );
+        Opportunity updatedTrip = TripManager.updateTrip(
+            trip.Id,
+            'Updated Trip',
+            'Qualification',
+            Date.today().addDays(20),
+            'New Description'
+        );
 
         Test.stopTest();
 
         Opportunity result = [
-
-            SELECT Id,
-                   Name,
-                   StageName,
-                   CloseDate,
-                   Description
+            SELECT Name, StageName, CloseDate, Description
             FROM Opportunity
             WHERE Id = :trip.Id
         ];
 
-        System.assertEquals(
-            'Updated Trip',
-            result.Name
-        );
-
-        System.assertEquals(
-            'Qualification',
-            result.StageName
-        );
-
-        System.assertEquals(
-            'New Description',
-            result.Description
-        );
+        System.assertEquals('Updated Trip', result.Name);
+        System.assertEquals('Qualification', result.StageName);
+        System.assertEquals('New Description', result.Description);
     }
 
+    /*
+     * =========================
+     * UPDATE TRIP - NULL ID
+     * =========================
+     */
     @isTest
     static void testUpdateTripWithNullId() {
 
         try {
-
             Test.startTest();
 
             TripManager.updateTrip(
@@ -210,11 +167,9 @@ public class TripManagerTest {
             );
 
             Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
+            System.assert(false, 'Exception attendue');
+        }
+        catch (AuraHandledException e) {
             System.assertEquals(
                 'Trip ID is required',
                 e.getMessage()
@@ -238,17 +193,13 @@ public class TripManagerTest {
             StageName = 'Prospecting',
             CloseDate = Date.today().addDays(5)
         );
-
         insert trip;
 
         Test.startTest();
-
         TripManager.deleteTrip(trip.Id);
-
         Test.stopTest();
 
         Integer countTrips = [
-
             SELECT COUNT()
             FROM Opportunity
             WHERE Id = :trip.Id
@@ -273,45 +224,37 @@ public class TripManagerTest {
             StageName = 'Prospecting',
             CloseDate = Date.today().addDays(5)
         );
-
         insert trip;
 
         Test.startTest();
 
-        Opportunity result =
-            TripManager.getTripById(trip.Id);
+        Opportunity result = TripManager.getTripById(trip.Id);
 
         Test.stopTest();
 
-        System.assertNotEquals(null, result);
-
-        System.assertEquals(
-            trip.Id,
-            result.Id
-        );
+        System.assertEquals(trip.Id, result.Id);
     }
 
+    /*
+     * =========================
+     * GET TRIP NOT FOUND
+     * =========================
+     */
     @isTest
     static void testGetTripByIdNotFound() {
 
         try {
-
             Test.startTest();
 
             TripManager.getTripById(
-                '006000000000000AAA'
+                Id.valueOf('006000000000000AAA')
             );
 
             Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Trip not found',
-                e.getMessage()
-            );
+            System.assert(false, 'Exception attendue');
+        }
+        catch (AuraHandledException e) {
+            System.assertEquals('Trip not found', e.getMessage());
         }
     }
 
@@ -343,36 +286,32 @@ public class TripManagerTest {
 
         Test.startTest();
 
-        List<Opportunity> trips =
-            TripManager.getTripsById(
-                new List<Id>{ trip1.Id, trip2.Id }
-            );
+        List<Opportunity> trips = TripManager.getTripsById(
+            new List<Id>{ trip1.Id, trip2.Id }
+        );
 
         Test.stopTest();
 
-        System.assertEquals(
-            2,
-            trips.size()
-        );
+        System.assertEquals(2, trips.size());
     }
 
+    /*
+     * =========================
+     * EMPTY LIST
+     * =========================
+     */
     @isTest
     static void testGetTripsByIdEmptyList() {
 
         try {
-
             Test.startTest();
 
-            TripManager.getTripsById(
-                new List<Id>()
-            );
+            TripManager.getTripsById(new List<Id>());
 
             Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
+            System.assert(false, 'Exception attendue');
+        }
+        catch (AuraHandledException e) {
             System.assertEquals(
                 'Trip IDs are required',
                 e.getMessage()

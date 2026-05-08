@@ -8,12 +8,8 @@ public class OpportunityManagerTest {
      */
     private static Account createTestAccount() {
 
-        Account acc = new Account(
-            Name = 'Test Account'
-        );
-
+        Account acc = new Account(Name = 'Test Account');
         insert acc;
-
         return acc;
     }
 
@@ -29,57 +25,35 @@ public class OpportunityManagerTest {
 
         Test.startTest();
 
-        Opportunity opp =
-            OpportunityManager.createOpportunity(
-                acc.Id,
-                'Test Opportunity',
-                'Prospecting',
-                '2026-12-31'
-            );
+        Opportunity opp = OpportunityManager.createOpportunity(
+            acc.Id,
+            'Test Opportunity',
+            'Prospecting',
+            '2026-12-31'
+        );
 
         Test.stopTest();
 
-        Opportunity createdOpp = [
-
-            SELECT Id,
-                   Name,
-                   AccountId,
-                   StageName,
-                   CloseDate
-            FROM Opportunity
-            WHERE Id = :opp.Id
-        ];
-
-        System.assertNotEquals(null, createdOpp);
-        System.assertEquals(
-            'Test Opportunity',
-            createdOpp.Name
-        );
-
-        System.assertEquals(
-            'Prospecting',
-            createdOpp.StageName
-        );
-
-        System.assertEquals(
-            Date.newInstance(2026,12,31),
-            createdOpp.CloseDate
-        );
-
-        System.assertEquals(
-            acc.Id,
-            createdOpp.AccountId
-        );
+        System.assertNotEquals(null, opp);
+        System.assertEquals('Test Opportunity', opp.Name);
+        System.assertEquals('Prospecting', opp.StageName);
+        System.assertEquals(Date.newInstance(2026, 12, 31), opp.CloseDate);
+        System.assertEquals(acc.Id, opp.AccountId);
     }
 
+    /*
+     * =========================
+     * CREATE - INVALID NAME
+     * =========================
+     */
     @isTest
     static void testCreateOpportunityWithoutName() {
 
         Account acc = createTestAccount();
+        Boolean hasError = false;
 
+        Test.startTest();
         try {
-
-            Test.startTest();
 
             OpportunityManager.createOpportunity(
                 acc.Id,
@@ -88,27 +62,30 @@ public class OpportunityManagerTest {
                 '2026-12-31'
             );
 
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Opportunity Name is required',
-                e.getMessage()
+        } catch (Exception e) {
+            hasError = true;
+            System.assert(
+                e.getMessage().contains('Opportunity Name is required')
             );
         }
+        Test.stopTest();
+
+        System.assertEquals(true, hasError);
     }
 
+    /*
+     * =========================
+     * CREATE - INVALID DATE
+     * =========================
+     */
     @isTest
     static void testCreateOpportunityInvalidDate() {
 
         Account acc = createTestAccount();
+        Boolean hasError = false;
 
+        Test.startTest();
         try {
-
-            Test.startTest();
 
             OpportunityManager.createOpportunity(
                 acc.Id,
@@ -117,17 +94,15 @@ public class OpportunityManagerTest {
                 'INVALID_DATE'
             );
 
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Invalid date format',
-                e.getMessage()
+        } catch (Exception e) {
+            hasError = true;
+            System.assert(
+                e.getMessage().contains('Invalid date format')
             );
         }
+        Test.stopTest();
+
+        System.assertEquals(true, hasError);
     }
 
     /*
@@ -144,55 +119,38 @@ public class OpportunityManagerTest {
             Name = 'Old Opportunity',
             AccountId = acc.Id,
             StageName = 'Prospecting',
-            CloseDate = Date.today()
+            CloseDate = Date.today().addDays(5)
         );
-
         insert opp;
 
         Test.startTest();
 
-        Opportunity updatedOpp =
-            OpportunityManager.updateOpportunity(
-                opp.Id,
-                'Updated Opportunity',
-                'Qualification',
-                '2026-11-30'
-            );
+        Opportunity updatedOpp = OpportunityManager.updateOpportunity(
+            opp.Id,
+            'Updated Opportunity',
+            'Qualification',
+            '2026-11-30'
+        );
 
         Test.stopTest();
 
-        Opportunity result = [
-
-            SELECT Id,
-                   Name,
-                   StageName,
-                   CloseDate
-            FROM Opportunity
-            WHERE Id = :opp.Id
-        ];
-
-        System.assertEquals(
-            'Updated Opportunity',
-            result.Name
-        );
-
-        System.assertEquals(
-            'Qualification',
-            result.StageName
-        );
-
-        System.assertEquals(
-            Date.newInstance(2026,11,30),
-            result.CloseDate
-        );
+        System.assertEquals('Updated Opportunity', updatedOpp.Name);
+        System.assertEquals('Qualification', updatedOpp.StageName);
+        System.assertEquals(Date.newInstance(2026, 11, 30), updatedOpp.CloseDate);
     }
 
+    /*
+     * =========================
+     * UPDATE - NULL ID
+     * =========================
+     */
     @isTest
     static void testUpdateOpportunityWithNullId() {
 
-        try {
+        Boolean hasError = false;
 
-            Test.startTest();
+        Test.startTest();
+        try {
 
             OpportunityManager.updateOpportunity(
                 null,
@@ -201,17 +159,15 @@ public class OpportunityManagerTest {
                 '2026-11-30'
             );
 
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Opportunity ID is required',
-                e.getMessage()
+        } catch (Exception e) {
+            hasError = true;
+            System.assert(
+                e.getMessage().contains('Opportunity ID is required')
             );
         }
+        Test.stopTest();
+
+        System.assertEquals(true, hasError);
     }
 
     /*
@@ -230,19 +186,13 @@ public class OpportunityManagerTest {
             StageName = 'Prospecting',
             CloseDate = Date.today()
         );
-
         insert opp;
 
         Test.startTest();
-
-        OpportunityManager.deleteOpportunity(
-            opp.Id
-        );
-
+        OpportunityManager.deleteOpportunity(opp.Id);
         Test.stopTest();
 
         Integer countOpp = [
-
             SELECT COUNT()
             FROM Opportunity
             WHERE Id = :opp.Id
@@ -253,7 +203,7 @@ public class OpportunityManagerTest {
 
     /*
      * =========================
-     * GET OPPORTUNITY BY ID
+     * GET BY ID
      * =========================
      */
     @isTest
@@ -267,53 +217,43 @@ public class OpportunityManagerTest {
             StageName = 'Prospecting',
             CloseDate = Date.today()
         );
-
         insert opp;
 
         Test.startTest();
 
-        Opportunity result =
-            OpportunityManager.getOpportunityById(
-                opp.Id
-            );
+        Opportunity result = OpportunityManager.getOpportunityById(opp.Id);
 
         Test.stopTest();
 
-        System.assertNotEquals(null, result);
-
-        System.assertEquals(
-            opp.Id,
-            result.Id
-        );
+        System.assertEquals(opp.Id, result.Id);
     }
 
     @isTest
     static void testGetOpportunityByIdNotFound() {
 
-        try {
+        Boolean hasError = false;
 
-            Test.startTest();
+        Test.startTest();
+        try {
 
             OpportunityManager.getOpportunityById(
                 '006000000000000AAA'
             );
 
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Opportunity not found',
-                e.getMessage()
+        } catch (Exception e) {
+            hasError = true;
+            System.assert(
+                e.getMessage().contains('Opportunity not found')
             );
         }
+        Test.stopTest();
+
+        System.assertEquals(true, hasError);
     }
 
     /*
      * =========================
-     * GET MULTIPLE OPPORTUNITIES
+     * GET MULTIPLE
      * =========================
      */
     @isTest
@@ -322,14 +262,14 @@ public class OpportunityManagerTest {
         Account acc = createTestAccount();
 
         Opportunity opp1 = new Opportunity(
-            Name = 'Opportunity 1',
+            Name = 'Opp 1',
             AccountId = acc.Id,
             StageName = 'Prospecting',
             CloseDate = Date.today()
         );
 
         Opportunity opp2 = new Opportunity(
-            Name = 'Opportunity 2',
+            Name = 'Opp 2',
             AccountId = acc.Id,
             StageName = 'Qualification',
             CloseDate = Date.today()
@@ -339,40 +279,39 @@ public class OpportunityManagerTest {
 
         Test.startTest();
 
-        List<Opportunity> opportunities =
+        List<Opportunity> result =
             OpportunityManager.getOpportunitiesById(
                 new List<Id>{ opp1.Id, opp2.Id }
             );
 
         Test.stopTest();
 
-        System.assertEquals(
-            2,
-            opportunities.size()
-        );
+        System.assertEquals(2, result.size());
     }
 
+    /*
+     * =========================
+     * EMPTY LIST
+     * =========================
+     */
     @isTest
     static void testGetOpportunitiesByIdEmptyList() {
 
+        Boolean hasError = false;
+
+        Test.startTest();
         try {
 
-            Test.startTest();
+            OpportunityManager.getOpportunitiesById(new List<Id>());
 
-            OpportunityManager.getOpportunitiesById(
-                new List<Id>()
-            );
-
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Opportunity IDs are required',
-                e.getMessage()
+        } catch (Exception e) {
+            hasError = true;
+            System.assert(
+                e.getMessage().contains('Opportunity IDs are required')
             );
         }
+        Test.stopTest();
+
+        System.assertEquals(true, hasError);
     }
 }

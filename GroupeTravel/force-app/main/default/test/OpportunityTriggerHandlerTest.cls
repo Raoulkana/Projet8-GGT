@@ -13,7 +13,6 @@ public class OpportunityTriggerHandlerTest {
         );
 
         insert acc;
-
         return acc;
     }
 
@@ -29,16 +28,14 @@ public class OpportunityTriggerHandlerTest {
 
     /*
      * =========================
-     * BEFORE INSERT
+     * BEFORE INSERT - SUCCESS
      * =========================
      */
     @isTest
     static void testBeforeInsertSuccess() {
 
         Account acc = createTestAccount();
-
-        Opportunity opp =
-            createValidOpportunity(acc.Id);
+        Opportunity opp = createValidOpportunity(acc.Id);
 
         Test.startTest();
 
@@ -51,46 +48,19 @@ public class OpportunityTriggerHandlerTest {
         System.assert(true);
     }
 
+    /*
+     * =========================
+     * BEFORE INSERT - MISSING NAME
+     * =========================
+     */
     @isTest
     static void testBeforeInsertMissingName() {
 
         Account acc = createTestAccount();
+        Opportunity opp = createValidOpportunity(acc.Id);
+        opp.Name = null;
 
-        Opportunity opp =
-            createValidOpportunity(acc.Id);
-
-        opp.Name = '';
-
-        try {
-
-            Test.startTest();
-
-            OpportunityTriggerHandler.beforeInsert(
-                new List<Opportunity>{ opp }
-            );
-
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Opportunity Name is required',
-                e.getMessage()
-            );
-        }
-    }
-
-    @isTest
-    static void testBeforeInsertPastDate() {
-
-        Account acc = createTestAccount();
-
-        Opportunity opp =
-            createValidOpportunity(acc.Id);
-
-        opp.CloseDate = Date.today().addDays(-1);
+        Boolean exceptionThrown = false;
 
         try {
 
@@ -102,20 +72,57 @@ public class OpportunityTriggerHandlerTest {
 
             Test.stopTest();
 
-            System.assert(false);
+        } catch (Exception e) {
 
-        } catch (AuraHandledException e) {
+            exceptionThrown = true;
 
-            System.assertEquals(
-                'CloseDate cannot be in the past',
-                e.getMessage()
+            System.assert(
+                e.getMessage().contains('Opportunity Name is required')
             );
         }
+
+        System.assertEquals(true, exceptionThrown);
     }
 
     /*
      * =========================
-     * BEFORE UPDATE
+     * BEFORE INSERT - PAST DATE
+     * =========================
+     */
+    @isTest
+    static void testBeforeInsertPastDate() {
+
+        Account acc = createTestAccount();
+        Opportunity opp = createValidOpportunity(acc.Id);
+        opp.CloseDate = Date.today().addDays(-5);
+
+        Boolean exceptionThrown = false;
+
+        try {
+
+            Test.startTest();
+
+            OpportunityTriggerHandler.beforeInsert(
+                new List<Opportunity>{ opp }
+            );
+
+            Test.stopTest();
+
+        } catch (Exception e) {
+
+            exceptionThrown = true;
+
+            System.assert(
+                e.getMessage().contains('CloseDate cannot be in the past')
+            );
+        }
+
+        System.assertEquals(true, exceptionThrown);
+    }
+
+    /*
+     * =========================
+     * BEFORE UPDATE - SUCCESS
      * =========================
      */
     @isTest
@@ -123,25 +130,16 @@ public class OpportunityTriggerHandlerTest {
 
         Account acc = createTestAccount();
 
-        Opportunity oldOpp =
-            createValidOpportunity(acc.Id);
-
+        Opportunity oldOpp = createValidOpportunity(acc.Id);
         insert oldOpp;
 
-        Opportunity updatedOpp = oldOpp.clone(
-            false,
-            true,
-            false,
-            false
-        );
-
+        Opportunity updatedOpp = oldOpp.clone(false, true, false, false);
         updatedOpp.Id = oldOpp.Id;
         updatedOpp.StageName = 'Closed Won';
 
-        Map<Id, Opportunity> oldMap =
-            new Map<Id, Opportunity>{
-                oldOpp.Id => oldOpp
-            };
+        Map<Id, Opportunity> oldMap = new Map<Id, Opportunity>{
+            oldOpp.Id => oldOpp
+        };
 
         Test.startTest();
 
@@ -165,25 +163,16 @@ public class OpportunityTriggerHandlerTest {
 
         Account acc = createTestAccount();
 
-        Opportunity oldOpp =
-            createValidOpportunity(acc.Id);
-
+        Opportunity oldOpp = createValidOpportunity(acc.Id);
         insert oldOpp;
 
-        Opportunity newOpp = oldOpp.clone(
-            false,
-            true,
-            false,
-            false
-        );
-
+        Opportunity newOpp = oldOpp.clone(false, true, false, false);
         newOpp.Id = oldOpp.Id;
         newOpp.StageName = 'Closed Won';
 
-        Map<Id, Opportunity> oldMap =
-            new Map<Id, Opportunity>{
-                oldOpp.Id => oldOpp
-            };
+        Map<Id, Opportunity> oldMap = new Map<Id, Opportunity>{
+            oldOpp.Id => oldOpp
+        };
 
         Test.startTest();
 
@@ -206,9 +195,7 @@ public class OpportunityTriggerHandlerTest {
     static void testHandleDateValidation() {
 
         Account acc = createTestAccount();
-
-        Opportunity opp =
-            createValidOpportunity(acc.Id);
+        Opportunity opp = createValidOpportunity(acc.Id);
 
         Test.startTest();
 
@@ -229,6 +216,8 @@ public class OpportunityTriggerHandlerTest {
     @isTest
     static void testNullOpportunity() {
 
+        Boolean exceptionThrown = false;
+
         try {
 
             Test.startTest();
@@ -239,15 +228,16 @@ public class OpportunityTriggerHandlerTest {
 
             Test.stopTest();
 
-            System.assert(false);
+        } catch (Exception e) {
 
-        } catch (AuraHandledException e) {
+            exceptionThrown = true;
 
-            System.assertEquals(
-                'Opportunity cannot be null',
-                e.getMessage()
+            System.assert(
+                e.getMessage().contains('Opportunity cannot be null')
             );
         }
+
+        System.assertEquals(true, exceptionThrown);
     }
 
     /*
@@ -259,11 +249,10 @@ public class OpportunityTriggerHandlerTest {
     static void testMissingStageName() {
 
         Account acc = createTestAccount();
+        Opportunity opp = createValidOpportunity(acc.Id);
+        opp.StageName = null;
 
-        Opportunity opp =
-            createValidOpportunity(acc.Id);
-
-        opp.StageName = '';
+        Boolean exceptionThrown = false;
 
         try {
 
@@ -275,15 +264,16 @@ public class OpportunityTriggerHandlerTest {
 
             Test.stopTest();
 
-            System.assert(false);
+        } catch (Exception e) {
 
-        } catch (AuraHandledException e) {
+            exceptionThrown = true;
 
-            System.assertEquals(
-                'StageName is required',
-                e.getMessage()
+            System.assert(
+                e.getMessage().contains('StageName is required')
             );
         }
+
+        System.assertEquals(true, exceptionThrown);
     }
 
     /*
@@ -295,11 +285,10 @@ public class OpportunityTriggerHandlerTest {
     static void testMissingCloseDate() {
 
         Account acc = createTestAccount();
-
-        Opportunity opp =
-            createValidOpportunity(acc.Id);
-
+        Opportunity opp = createValidOpportunity(acc.Id);
         opp.CloseDate = null;
+
+        Boolean exceptionThrown = false;
 
         try {
 
@@ -311,14 +300,15 @@ public class OpportunityTriggerHandlerTest {
 
             Test.stopTest();
 
-            System.assert(false);
+        } catch (Exception e) {
 
-        } catch (AuraHandledException e) {
+            exceptionThrown = true;
 
-            System.assertEquals(
-                'CloseDate is required',
-                e.getMessage()
+            System.assert(
+                e.getMessage().contains('CloseDate is required')
             );
         }
+
+        System.assertEquals(true, exceptionThrown);
     }
 }

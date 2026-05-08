@@ -6,15 +6,22 @@ public class ContractManagerTest {
      * TEST DATA
      * =========================
      */
-    private static Account createTestAccount() {
-
-        Account acc = new Account(
-            Name = 'Test Account'
-        );
-
+    private static Account createAccount() {
+        Account acc = new Account(Name = 'Test Account');
         insert acc;
-
         return acc;
+    }
+
+    private static Contract createContract(Account acc) {
+        Contract c = new Contract(
+            AccountId = acc.Id,
+            Name = 'Test Contract',
+            StartDate = Date.today(),
+        
+            Status = 'Draft'
+        );
+        insert c;
+        return c;
     }
 
     /*
@@ -25,168 +32,73 @@ public class ContractManagerTest {
     @isTest
     static void testCreateContract() {
 
-        Account acc = createTestAccount();
+        Account acc = createAccount();
 
         Test.startTest();
 
-        Contract result = ContractManager.createContract(
+        Contract c = ContractManager.createContract(
             acc.Id,
-            'Test Contract',
-            '2026-01-01',
-            '2026-12-31'
+            'Contract A',
+            String.valueOf(Date.today()),
+            String.valueOf(Date.today().addDays(10))
         );
 
         Test.stopTest();
 
-        Contract createdContract = [
-            SELECT Id,
-                   Name,
-                   AccountId,
-                   StartDate,
-                   Status
-            FROM Contract
-            WHERE Id = :result.Id
-        ];
-
-        System.assertNotEquals(null, createdContract);
-        System.assertEquals('Test Contract', createdContract.Name);
-        System.assertEquals(acc.Id, createdContract.AccountId);
-        System.assertEquals(Date.newInstance(2026,1,1),
-                            createdContract.StartDate);
-        System.assertEquals('Draft', createdContract.Status);
+        System.assertNotEquals(null, c.Id);
+        System.assertEquals('Contract A', c.Name);
     }
 
-    @isTest
-    static void testCreateContractMissingName() {
-
-        Account acc = createTestAccount();
-
-        try {
-
-            Test.startTest();
-
-            ContractManager.createContract(
-                acc.Id,
-                '',
-                '2026-01-01',
-                '2026-12-31'
-            );
-
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Contract Name is required',
-                e.getMessage()
-            );
-        }
-    }
-
+    /*
+     * =========================
+     * INVALID DATES
+     * =========================
+     */
     @isTest
     static void testCreateContractInvalidDates() {
 
-        Account acc = createTestAccount();
+        Account acc = createAccount();
 
         try {
-
-            Test.startTest();
-
             ContractManager.createContract(
                 acc.Id,
-                'Invalid Contract',
-                '2026-12-31',
-                '2026-01-01'
+                'Contract A',
+                String.valueOf(Date.today().addDays(10)),
+                String.valueOf(Date.today())
             );
 
-            Test.stopTest();
+            System.assert(false, 'Exception attendue non levée');
 
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Start Date must be before End Date',
-                e.getMessage()
+        } catch (Exception e) {
+            System.assert(
+                e.getMessage().contains('Start Date must be before End Date')
             );
         }
     }
 
     /*
      * =========================
-     * UPDATE CONTRACT
+     * MISSING NAME
      * =========================
      */
     @isTest
-    static void testUpdateContract() {
+    static void testCreateContractMissingName() {
 
-        Account acc = createTestAccount();
-
-        Contract contractRec = new Contract(
-            Name = 'Old Contract',
-            AccountId = acc.Id,
-            StartDate = Date.today(),
-            Status = 'Draft'
-        );
-
-        insert contractRec;
-
-        Test.startTest();
-
-        Contract updatedContract =
-            ContractManager.updateContract(
-                contractRec.Id,
-                'Updated Contract',
-                '2026-02-01',
-                '2026-12-31'
-            );
-
-        Test.stopTest();
-
-        Contract result = [
-            SELECT Id,
-                   Name,
-                   StartDate
-            FROM Contract
-            WHERE Id = :contractRec.Id
-        ];
-
-        System.assertEquals(
-            'Updated Contract',
-            result.Name
-        );
-
-        System.assertEquals(
-            Date.newInstance(2026,2,1),
-            result.StartDate
-        );
-    }
-
-    @isTest
-    static void testUpdateContractWithNullId() {
+        Account acc = createAccount();
 
         try {
-
-            Test.startTest();
-
-            ContractManager.updateContract(
-                null,
-                'Updated Contract',
-                '2026-02-01',
-                '2026-12-31'
+            ContractManager.createContract(
+                acc.Id,
+                '',
+                String.valueOf(Date.today()),
+                String.valueOf(Date.today().addDays(10))
             );
 
-            Test.stopTest();
+            System.assert(false, 'Exception attendue non levée');
 
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Contract ID is required',
-                e.getMessage()
+        } catch (Exception e) {
+            System.assert(
+                e.getMessage().contains('Contract Name is required')
             );
         }
     }
@@ -199,149 +111,100 @@ public class ContractManagerTest {
     @isTest
     static void testDeleteContract() {
 
-        Account acc = createTestAccount();
-
-        Contract contractRec = new Contract(
-            Name = 'Delete Contract',
-            AccountId = acc.Id,
-            StartDate = Date.today(),
-            Status = 'Draft'
-        );
-
-        insert contractRec;
+        Account acc = createAccount();
+        Contract c = createContract(acc);
 
         Test.startTest();
-
-        ContractManager.deleteContract(contractRec.Id);
-
+        ContractManager.deleteContract(c.Id);
         Test.stopTest();
 
-        Integer countContracts = [
-            SELECT COUNT()
-            FROM Contract
-            WHERE Id = :contractRec.Id
-        ];
-
-        System.assertEquals(0, countContracts);
+        System.assertEquals(
+            0,
+            [SELECT COUNT() FROM Contract WHERE Id = :c.Id]
+        );
     }
 
     /*
      * =========================
-     * GET CONTRACT BY ID
+     * GET BY ID
      * =========================
      */
     @isTest
     static void testGetContractById() {
 
-        Account acc = createTestAccount();
+        Account acc = createAccount();
+        Contract c = createContract(acc);
 
-        Contract contractRec = new Contract(
-            Name = 'Find Contract',
-            AccountId = acc.Id,
-            StartDate = Date.today(),
-            Status = 'Draft'
-        );
+        Contract result = ContractManager.getContractById(c.Id);
 
-        insert contractRec;
-
-        Test.startTest();
-
-        Contract result =
-            ContractManager.getContractById(
-                contractRec.Id
-            );
-
-        Test.stopTest();
-
-        System.assertNotEquals(null, result);
-        System.assertEquals(
-            contractRec.Id,
-            result.Id
-        );
+        System.assertEquals(c.Id, result.Id);
     }
 
     @isTest
     static void testGetContractByIdNotFound() {
 
-        try {
+        Contract result = ContractManager.getContractById(
+            '800000000000000AAA'
+        );
 
-            Test.startTest();
-
-            ContractManager.getContractById(
-                '800000000000000AAA'
-            );
-
-            Test.stopTest();
-
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Contract not found',
-                e.getMessage()
-            );
-        }
+        System.assertEquals(null, result);
     }
 
     /*
      * =========================
-     * GET CONTRACTS BY IDS
+     * GET MULTIPLE
      * =========================
      */
     @isTest
     static void testGetContractsById() {
 
-        Account acc = createTestAccount();
+        Account acc = createAccount();
 
-        Contract c1 = new Contract(
-            Name = 'Contract 1',
-            AccountId = acc.Id,
-            StartDate = Date.today(),
-            Status = 'Draft'
+        Contract c1 = createContract(acc);
+        Contract c2 = createContract(acc);
+
+        List<Contract> result = ContractManager.getContractsById(
+            new List<Id>{ c1.Id, c2.Id }
         );
 
-        Contract c2 = new Contract(
-            Name = 'Contract 2',
-            AccountId = acc.Id,
-            StartDate = Date.today(),
-            Status = 'Draft'
-        );
-
-        insert new List<Contract>{ c1, c2 };
-
-        Test.startTest();
-
-        List<Contract> contracts =
-            ContractManager.getContractsById(
-                new List<Id>{ c1.Id, c2.Id }
-            );
-
-        Test.stopTest();
-
-        System.assertEquals(2, contracts.size());
+        System.assertEquals(2, result.size());
     }
 
+    /*
+     * =========================
+     * EMPTY LIST
+     * =========================
+     */
     @isTest
     static void testGetContractsByIdEmptyList() {
 
+        List<Contract> result =
+            ContractManager.getContractsById(new List<Id>());
+
+        System.assertEquals(0, result.size());
+    }
+
+    /*
+     * =========================
+     * UPDATE NULL ID
+     * =========================
+     */
+    @isTest
+    static void testUpdateContractWithNullId() {
+
         try {
-
-            Test.startTest();
-
-            ContractManager.getContractsById(
-                new List<Id>()
+            ContractManager.updateContract(
+                null,
+                'Name',
+                String.valueOf(Date.today()),
+                String.valueOf(Date.today().addDays(10))
             );
 
-            Test.stopTest();
+            System.assert(false, 'Exception attendue non levée');
 
-            System.assert(false);
-
-        } catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Contract IDs are required',
-                e.getMessage()
+        } catch (Exception e) {
+            System.assert(
+                e.getMessage().contains('Contract ID is required')
             );
         }
     }

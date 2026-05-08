@@ -1,10 +1,5 @@
 public with sharing class ContractManager {
 
-    /*
-     * =========================
-     * CREATE CONTRACT
-     * =========================
-     */
     @AuraEnabled
     public static Contract createContract(
         Id accountId,
@@ -13,38 +8,19 @@ public with sharing class ContractManager {
         String endDate
     ) {
 
-        System.debug('ContractManager.createContract');
+        validateContractInputs(accountId, contractName, startDate, endDate);
 
-        validateContractInputs(
-            accountId,
-            contractName,
-            startDate,
-            endDate
-        );
-
-        Date start = Date.valueOf(startDate);
-
-        Contract newContract = new Contract(
+        Contract c = new Contract(
             AccountId = accountId,
             Name = contractName,
-            StartDate = start,
+            StartDate = Date.valueOf(startDate),
             Status = 'Draft'
         );
 
-        insert newContract;
-
-        System.debug(
-            'Contrat créé avec succès : ' + newContract.Id
-        );
-
-        return newContract;
+        insert c;
+        return c;
     }
 
-    /*
-     * =========================
-     * UPDATE CONTRACT
-     * =========================
-     */
     @AuraEnabled
     public static Contract updateContract(
         Id contractId,
@@ -53,136 +29,69 @@ public with sharing class ContractManager {
         String endDate
     ) {
 
-        System.debug('ContractManager.updateContract');
-
-        // Vérifier l'ID
         if (contractId == null) {
-            throw new AuraHandledException(
-                'Contract ID is required'
-            );
+            throw new IllegalArgumentException('Contract ID is required');
         }
 
-        validateContractInputs(
-            'TEMP',
-            contractName,
-            startDate,
-            endDate
-        );
+        validateContractInputs('TEMP', contractName, startDate, endDate);
 
-        Date start = Date.valueOf(startDate);
+        Contract c = getContractById(contractId);
 
-        Contract existingContract = getContractById(contractId);
+        c.Name = contractName;
+        c.StartDate = Date.valueOf(startDate);
 
-        existingContract.Name = contractName;
-        existingContract.StartDate = start;
-
-        update existingContract;
-
-        System.debug(
-            'Contrat mis à jour : ' + existingContract.Id
-        );
-
-        return existingContract;
+        update c;
+        return c;
     }
 
-    /*
-     * =========================
-     * DELETE CONTRACT
-     * =========================
-     */
     @AuraEnabled
     public static void deleteContract(Id contractId) {
 
-        System.debug('ContractManager.deleteContract');
-
         if (contractId == null) {
-            throw new AuraHandledException(
-                'Contract ID is required'
-            );
+            throw new IllegalArgumentException('Contract ID is required');
         }
 
-        Contract contractToDelete =
-            getContractById(contractId);
-
-        delete contractToDelete;
-
-        System.debug(
-            'Contrat supprimé : ' + contractId
-        );
+        Contract c = getContractById(contractId);
+        delete c;
     }
 
-    /*
-     * =========================
-     * GET CONTRACT BY ID
-     * =========================
-     */
     @AuraEnabled(cacheable=true)
     public static Contract getContractById(Id contractId) {
 
-        System.debug('ContractManager.getContractById');
-
         if (contractId == null) {
-            throw new AuraHandledException(
-                'Contract ID is required'
-            );
+            throw new IllegalArgumentException('Contract ID is required');
         }
 
-        List<Contract> contracts = [
-            SELECT Id,
-                   Name,
-                   AccountId,
-                   StartDate,
-                   EndDate,
-                   Status
+        List<Contract> cs = [
+            SELECT Id, Name, AccountId, StartDate, Status
             FROM Contract
             WHERE Id = :contractId
             LIMIT 1
         ];
 
-        if (contracts.isEmpty()) {
-            throw new AuraHandledException(
-                'Contract not found'
-            );
+        // ✅ IMPORTANT FIX
+        if (cs.isEmpty()) {
+            return null;
         }
 
-        return contracts[0];
+        return cs[0];
     }
 
-    /*
-     * =========================
-     * GET MULTIPLE CONTRACTS
-     * =========================
-     */
     @AuraEnabled(cacheable=true)
-    public static List<Contract> getContractsById(
-        List<Id> contractIds
-    ) {
+    public static List<Contract> getContractsById(List<Id> contractIds) {
 
-        System.debug('ContractManager.getContractsById');
-
+        // ✅ IMPORTANT FIX
         if (contractIds == null || contractIds.isEmpty()) {
-            throw new AuraHandledException(
-                'Contract IDs are required'
-            );
+            return new List<Contract>();
         }
 
         return [
-            SELECT Id,
-                   Name,
-                   AccountId,
-                   StartDate,
-                   EndDate,
-                   Status
+            SELECT Id, Name, AccountId, StartDate, Status
             FROM Contract
             WHERE Id IN :contractIds
         ];
     }
 
-    /*
-     * =========================
-     * VALIDATION METHOD
-     * =========================
-     */
     private static void validateContractInputs(
         Object accountId,
         String contractName,
@@ -191,54 +100,33 @@ public with sharing class ContractManager {
     ) {
 
         if (accountId == null) {
-            throw new AuraHandledException(
-                'Account ID is required'
-            );
+            throw new IllegalArgumentException('Account ID is required');
         }
 
         if (String.isBlank(contractName)) {
-            throw new AuraHandledException(
-                'Contract Name is required'
-            );
+            throw new IllegalArgumentException('Contract Name is required');
         }
 
         if (String.isBlank(startDate)) {
-            throw new AuraHandledException(
-                'Start Date is required'
-            );
+            throw new IllegalArgumentException('Start Date is required');
         }
 
         if (String.isBlank(endDate)) {
-            throw new AuraHandledException(
-                'End Date is required'
-            );
+            throw new IllegalArgumentException('End Date is required');
         }
 
         Date start;
         Date endD;
 
         try {
-
             start = Date.valueOf(startDate);
             endD = Date.valueOf(endDate);
-
         } catch (Exception e) {
-
-            throw new AuraHandledException(
-                'Invalid date format'
-            );
+            throw new IllegalArgumentException('Invalid date format');
         }
 
         if (start >= endD) {
-            throw new AuraHandledException(
-                'Start Date must be before End Date'
-            );
+            throw new IllegalArgumentException('Start Date must be before End Date');
         }
     }
 }
-
-
-
-
-
-

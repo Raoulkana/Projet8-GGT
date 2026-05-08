@@ -18,7 +18,7 @@ public class UpdateTripStatusBatchTest {
             StartDate__c = Date.today().addDays(5),
             EndDate__c = Date.today().addDays(10),
             NumberOfParticipant__c = 10,
-            Status__c = 'Ancien Statut'
+            Status__c = 'A venir'
         ));
 
         /*
@@ -29,7 +29,7 @@ public class UpdateTripStatusBatchTest {
             StartDate__c = Date.today().addDays(-2),
             EndDate__c = Date.today().addDays(2),
             NumberOfParticipant__c = 15,
-            Status__c = 'Ancien Statut'
+            Status__c = 'A venir'
         ));
 
         /*
@@ -40,7 +40,7 @@ public class UpdateTripStatusBatchTest {
             StartDate__c = Date.today().addDays(-10),
             EndDate__c = Date.today().addDays(-5),
             NumberOfParticipant__c = 20,
-            Status__c = 'Ancien Statut'
+            Status__c = 'A venir'
         ));
 
         insert trips;
@@ -93,7 +93,7 @@ public class UpdateTripStatusBatchTest {
         );
 
         System.assertEquals(
-            'En Cours',
+            'En cours',
             tripMap.get('In Progress Trip').Status__c
         );
 

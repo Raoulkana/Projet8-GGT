@@ -1,51 +1,44 @@
 @isTest
 public class CancelTripsBatchTest {
 
-    /**
-     * Test principal :
-     * Vérifie que les voyages éligibles sont annulés
+    /*
+     * =========================
+     * TEST DATA HELPER
+     * =========================
+     */
+    private static Trip__c createTrip(
+        String name,
+        Integer startOffset,
+        Integer endOffset,
+        Integer participants,
+        String status
+    ) {
+        return new Trip__c(
+            Name = name,
+            StartDate__c = Date.today().addDays(startOffset),
+            EndDate__c = Date.today().addDays(endOffset),
+            NumberOfParticipant__c = participants,
+            Status__c = status
+        );
+    }
+
+    /*
+     * =========================
+     * MAIN BATCH TEST
+     * =========================
      */
     @isTest
     static void testCancelTripsBatch() {
 
-        // Voyage à annuler
-        Trip__c tripToCancel = new Trip__c(
-            Name = 'Trip Cancel',
-            StartDate__c = Date.today().addDays(7),
-            NumberOfParticipant__c = 5,
-            Status__c = 'Planifié'
-        );
+        List<Trip__c> trips = new List<Trip__c>{
 
-        // Voyage NON annulé (participants suffisants)
-        Trip__c tripNotCancelled = new Trip__c(
-            Name = 'Trip OK',
-            StartDate__c = Date.today().addDays(7),
-            NumberOfParticipant__c = 15,
-            Status__c = 'Planifié'
-        );
-
-        // Voyage déjà annulé
-        Trip__c alreadyCancelled = new Trip__c(
-            Name = 'Already Cancelled',
-            StartDate__c = Date.today().addDays(7),
-            NumberOfParticipant__c = 3,
-            Status__c = 'Annulé'
-        );
-
-        // Voyage hors période
-        Trip__c otherDateTrip = new Trip__c(
-            Name = 'Other Date',
-            StartDate__c = Date.today().addDays(15),
-            NumberOfParticipant__c = 2,
-            Status__c = 'Planifié'
-        );
-
-        insert new List<Trip__c>{
-            tripToCancel,
-            tripNotCancelled,
-            alreadyCancelled,
-            otherDateTrip
+            createTrip('Trip Cancel', 7, 10, 5, 'A venir'),
+            createTrip('Trip OK', 7, 10, 15, 'A venir'),
+            createTrip('Already Cancelled', 7, 10, 3, 'Annulé'),
+            createTrip('Other Date', 15, 20, 2, 'A venir')
         };
+
+        insert trips;
 
         Test.startTest();
 
@@ -54,74 +47,66 @@ public class CancelTripsBatchTest {
 
         Test.stopTest();
 
-        // Requête après batch
-        List<Trip__c> trips = [
-            SELECT Id, Name, Status__c
+        Map<String, Trip__c> resultMap = new Map<String, Trip__c>();
+        for (Trip__c t : [
+            SELECT Name, Status__c
             FROM Trip__c
-        ];
-
-        Map<String, Trip__c> tripsMap = new Map<String, Trip__c>();
-
-        for (Trip__c t : trips) {
-            tripsMap.put(t.Name, t);
+        ]) {
+            resultMap.put(t.Name, t);
         }
 
-        // Vérifications
-
-        // Doit être annulé
         System.assertEquals(
             'Annulé',
-            tripsMap.get('Trip Cancel').Status__c
+            resultMap.get('Trip Cancel').Status__c
         );
 
-        // Ne doit PAS être annulé
         System.assertEquals(
-            'Planifié',
-            tripsMap.get('Trip OK').Status__c
+            'A venir',
+            resultMap.get('Trip OK').Status__c
         );
 
-        // Déjà annulé
         System.assertEquals(
             'Annulé',
-            tripsMap.get('Already Cancelled').Status__c
+            resultMap.get('Already Cancelled').Status__c
         );
 
-        // Mauvaise date
         System.assertEquals(
-            'Planifié',
-            tripsMap.get('Other Date').Status__c
+            'A venir',
+            resultMap.get('Other Date').Status__c
         );
     }
 
-    /**
-     * Test :
-     * Aucun voyage à traiter
+    /*
+     * =========================
+     * NO DATA CASE
+     * =========================
      */
     @isTest
     static void testBatchWithNoTrips() {
 
         Test.startTest();
 
-        CancelTripsBatch batch = new CancelTripsBatch();
-        Database.executeBatch(batch, 200);
+        Database.executeBatch(new CancelTripsBatch(), 200);
 
         Test.stopTest();
 
-        // Vérifie qu'aucune exception n'est levée
         System.assert(true);
     }
 
-    /**
-     * Test de la méthode start()
+    /*
+     * =========================
+     * START METHOD
+     * =========================
      */
     @isTest
     static void testStartMethod() {
 
-        Trip__c trip = new Trip__c(
-            Name = 'Trip Start Test',
-            StartDate__c = Date.today().addDays(7),
-            NumberOfParticipant__c = 2,
-            Status__c = 'Planifié'
+        Trip__c trip = createTrip(
+            'Trip Start Test',
+            7,
+            10,
+            2,
+            'A venir'
         );
 
         insert trip;
@@ -129,12 +114,38 @@ public class CancelTripsBatchTest {
         Test.startTest();
 
         CancelTripsBatch batch = new CancelTripsBatch();
-
-        Database.QueryLocator queryLocator =
-            batch.start(null);
+        Database.QueryLocator ql = batch.start(null);
 
         Test.stopTest();
 
-        System.assertNotEquals(null, queryLocator);
+        System.assertNotEquals(null, ql);
+    }
+
+    /*
+     * =========================
+     * FINISH METHOD COVERAGE
+     * =========================
+     */
+    @isTest
+    static void testFinishMethod() {
+
+        Trip__c trip = createTrip(
+            'Trip Finish Test',
+            7,
+            10,
+            5,
+            'A venir'
+        );
+
+        insert trip;
+
+        Test.startTest();
+
+        CancelTripsBatch batch = new CancelTripsBatch();
+        Database.executeBatch(batch, 200);
+
+        Test.stopTest();
+
+        System.assert(true);
     }
 }

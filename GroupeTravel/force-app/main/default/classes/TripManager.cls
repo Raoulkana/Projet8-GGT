@@ -14,14 +14,7 @@ public with sharing class TripManager {
         String description
     ) {
 
-        System.debug('TripManager.createTrip');
-
-        validateTripInputs(
-            accountId,
-            name,
-            stage,
-            closeDate
-        );
+        validateTripInputs(accountId, name, stage, closeDate);
 
         Opportunity trip = new Opportunity(
             AccountId = accountId,
@@ -32,11 +25,6 @@ public with sharing class TripManager {
         );
 
         insert trip;
-
-        System.debug(
-            'Voyage créé avec succès : ' + trip.Id
-        );
-
         return trip;
     }
 
@@ -54,23 +42,13 @@ public with sharing class TripManager {
         String description
     ) {
 
-        System.debug('TripManager.updateTrip');
-
         if (tripId == null) {
-
-            throw new AuraHandledException(
-                'Trip ID is required'
-            );
+            throw new AuraHandledException('Trip ID is required');
         }
 
-        validateTripInputs(
-            'TEMP',
-            name,
-            stage,
-            closeDate
-        );
-
         Opportunity trip = getTripById(tripId);
+
+        validateTripInputs(trip.AccountId, name, stage, closeDate);
 
         trip.Name = name;
         trip.StageName = stage;
@@ -78,75 +56,46 @@ public with sharing class TripManager {
         trip.Description = description;
 
         update trip;
-
-        System.debug(
-            'Voyage mis à jour : ' + trip.Id
-        );
-
         return trip;
     }
 
     /*
      * =========================
-     * DELETE TRIP
+     * DELETE
      * =========================
      */
     @AuraEnabled
     public static void deleteTrip(Id tripId) {
 
-        System.debug('TripManager.deleteTrip');
-
         if (tripId == null) {
-
-            throw new AuraHandledException(
-                'Trip ID is required'
-            );
+            throw new AuraHandledException('Trip ID is required');
         }
 
         Opportunity trip = getTripById(tripId);
-
         delete trip;
-
-        System.debug(
-            'Voyage supprimé : ' + tripId
-        );
     }
 
     /*
      * =========================
-     * GET TRIP BY ID
+     * GET BY ID
      * =========================
      */
     @AuraEnabled(cacheable=true)
     public static Opportunity getTripById(Id tripId) {
 
-        System.debug('TripManager.getTripById');
-
         if (tripId == null) {
-
-            throw new AuraHandledException(
-                'Trip ID is required'
-            );
+            throw new AuraHandledException('Trip ID is required');
         }
 
         List<Opportunity> trips = [
-
-            SELECT Id,
-                   AccountId,
-                   Name,
-                   StageName,
-                   CloseDate,
-                   Description
+            SELECT Id, AccountId, Name, StageName, CloseDate, Description
             FROM Opportunity
             WHERE Id = :tripId
             LIMIT 1
         ];
 
         if (trips.isEmpty()) {
-
-            throw new AuraHandledException(
-                'Trip not found'
-            );
+            throw new AuraHandledException('Trip not found');
         }
 
         return trips[0];
@@ -154,34 +103,18 @@ public with sharing class TripManager {
 
     /*
      * =========================
-     * GET MULTIPLE TRIPS
+     * GET MULTIPLE
      * =========================
      */
     @AuraEnabled(cacheable=true)
-    public static List<Opportunity> getTripsById(
-        List<Id> tripIds
-    ) {
+    public static List<Opportunity> getTripsById(List<Id> tripIds) {
 
-        System.debug('TripManager.getTripsById');
-
-        if (
-            tripIds == null ||
-            tripIds.isEmpty()
-        ) {
-
-            throw new AuraHandledException(
-                'Trip IDs are required'
-            );
+        if (tripIds == null || tripIds.isEmpty()) {
+            throw new AuraHandledException('Trip IDs are required');
         }
 
         return [
-
-            SELECT Id,
-                   AccountId,
-                   Name,
-                   StageName,
-                   CloseDate,
-                   Description
+            SELECT Id, AccountId, Name, StageName, CloseDate, Description
             FROM Opportunity
             WHERE Id IN :tripIds
         ];
@@ -189,50 +122,34 @@ public with sharing class TripManager {
 
     /*
      * =========================
-     * VALIDATION METHOD
+     * VALIDATION
      * =========================
      */
     private static void validateTripInputs(
-        Object accountId,
+        Id accountId,
         String name,
         String stage,
         Date closeDate
     ) {
 
         if (accountId == null) {
-
-            throw new AuraHandledException(
-                'Account ID is required'
-            );
+            throw new AuraHandledException('Account ID is required');
         }
 
         if (String.isBlank(name)) {
-
-            throw new AuraHandledException(
-                'Trip Name is required'
-            );
+            throw new AuraHandledException('Trip Name is required');
         }
 
         if (String.isBlank(stage)) {
-
-            throw new AuraHandledException(
-                'Stage Name is required'
-            );
+            throw new AuraHandledException('StageName is required');
         }
 
         if (closeDate == null) {
-
-            throw new AuraHandledException(
-                'Close Date is required'
-            );
+            throw new AuraHandledException('Close Date is required');
         }
 
-        // Vérification date passée
         if (closeDate < Date.today()) {
-
-            throw new AuraHandledException(
-                'Close Date cannot be in the past'
-            );
+            throw new AuraHandledException('Close Date cannot be in the past');
         }
     }
 }
