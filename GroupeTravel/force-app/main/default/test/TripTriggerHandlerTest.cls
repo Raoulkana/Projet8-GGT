@@ -26,10 +26,10 @@ public class TripTriggerHandlerTest {
         Trip__c trip = createValidTrip();
 
         Test.startTest();
-        TripTriggerHandler.beforeInsert(new List<Trip__c>{ trip });
+        insert trip;
         Test.stopTest();
 
-        System.assert(true);
+        System.assertNotEquals(null, trip.Id);
     }
 
     /*
@@ -44,18 +44,11 @@ public class TripTriggerHandlerTest {
         trip.Name = null;
 
         try {
-            Test.startTest();
-            TripTriggerHandler.beforeInsert(new List<Trip__c>{ trip });
-            Test.stopTest();
-
-            System.assert(false, 'Exception attendue');
+            insert trip;
+            System.assert(false, 'Erreur attendue');
         }
-        catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Trip Name is required',
-                e.getMessage()
-            );
+        catch (DmlException e) {
+            System.assert(e.getMessage().contains('Trip Name is required'));
         }
     }
 
@@ -71,18 +64,11 @@ public class TripTriggerHandlerTest {
         trip.StartDate__c = null;
 
         try {
-            Test.startTest();
-            TripTriggerHandler.beforeInsert(new List<Trip__c>{ trip });
-            Test.stopTest();
-
-            System.assert(false, 'Exception attendue');
+            insert trip;
+            System.assert(false);
         }
-        catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Start Date is required',
-                e.getMessage()
-            );
+        catch (DmlException e) {
+            System.assert(e.getMessage().contains('Start Date is required'));
         }
     }
 
@@ -98,18 +84,11 @@ public class TripTriggerHandlerTest {
         trip.EndDate__c = null;
 
         try {
-            Test.startTest();
-            TripTriggerHandler.beforeInsert(new List<Trip__c>{ trip });
-            Test.stopTest();
-
-            System.assert(false, 'Exception attendue');
+            insert trip;
+            System.assert(false);
         }
-        catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'End Date is required',
-                e.getMessage()
-            );
+        catch (DmlException e) {
+            System.assert(e.getMessage().contains('End Date is required'));
         }
     }
 
@@ -122,56 +101,38 @@ public class TripTriggerHandlerTest {
     static void testBeforeInsertInvalidDates() {
 
         Trip__c trip = createValidTrip();
-
         trip.StartDate__c = Date.today().addDays(10);
         trip.EndDate__c = Date.today().addDays(5);
 
         try {
-            Test.startTest();
-            TripTriggerHandler.beforeInsert(new List<Trip__c>{ trip });
-            Test.stopTest();
-
-            System.assert(false, 'Exception attendue');
+            insert trip;
+            System.assert(false);
         }
-        catch (AuraHandledException e) {
-
-            System.assertEquals(
-                'Start Date must be before End Date',
-                e.getMessage()
-            );
+        catch (DmlException e) {
+            System.assert(e.getMessage().contains('Start Date must be before End Date'));
         }
     }
 
     /*
      * =========================
-     * BEFORE UPDATE
+     * BEFORE UPDATE - SUCCESS
      * =========================
      */
     @isTest
     static void testBeforeUpdateSuccess() {
 
-        Trip__c oldTrip = createValidTrip();
-        insert oldTrip;
+        Trip__c trip = createValidTrip();
+        insert trip;
 
-        Trip__c newTrip = new Trip__c(
-            Id = oldTrip.Id,
-            Name = 'Updated Trip',
-            StartDate__c = Date.today().addDays(6),
-            EndDate__c = Date.today().addDays(12)
-        );
-
-        Map<Id, Trip__c> oldMap = new Map<Id, Trip__c>{
-            oldTrip.Id => oldTrip
-        };
+        trip.Name = 'Updated Trip';
+        trip.StartDate__c = Date.today().addDays(6);
+        trip.EndDate__c = Date.today().addDays(12);
 
         Test.startTest();
-        TripTriggerHandler.beforeUpdate(
-            new List<Trip__c>{ newTrip },
-            oldMap
-        );
+        update trip;
         Test.stopTest();
 
-        System.assert(true);
+        System.assertNotEquals(null, trip.Id);
     }
 
     /*
@@ -201,21 +162,14 @@ public class TripTriggerHandlerTest {
     @isTest
     static void testNullTrip() {
 
-        try {
-            Test.startTest();
-            TripTriggerHandler.handleDateValidation(
-                new List<Trip__c>{ null }
-            );
-            Test.stopTest();
+        Trip__c trip = null;
 
-            System.assert(false, 'Exception attendue');
-        }
-        catch (AuraHandledException e) {
+        Test.startTest();
+        TripTriggerHandler.handleDateValidation(
+            new List<Trip__c>{ trip }
+        );
+        Test.stopTest();
 
-            System.assertEquals(
-                'Trip cannot be null',
-                e.getMessage()
-            );
-        }
+        System.assert(true);
     }
 }

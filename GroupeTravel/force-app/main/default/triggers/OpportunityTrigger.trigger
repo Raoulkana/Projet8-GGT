@@ -1,29 +1,14 @@
 trigger OpportunityTrigger on Opportunity (before insert, before update, after update) {
 
-    /*
-     * =========================
-     * BEFORE EVENTS
-     * Validation des données
-     * =========================
-     */
-    if (Trigger.isBefore) {
-
-        if (Trigger.isInsert || Trigger.isUpdate) {
-
-            OpportunityTriggerHandler.handleDateValidation(
-                Trigger.new
-            );
-        }
+    if (Trigger.isBefore && Trigger.isInsert) {
+        OpportunityTriggerHandler.beforeInsert(Trigger.new);
     }
 
-    /*
-     * =========================
-     * AFTER UPDATE
-     * Création des voyages liés
-     * =========================
-     */
-    if (Trigger.isAfter && Trigger.isUpdate) {
+    if (Trigger.isBefore && Trigger.isUpdate) {
+        OpportunityTriggerHandler.beforeUpdate(Trigger.new, Trigger.oldMap);
+    }
 
+    if (Trigger.isAfter && Trigger.isUpdate) {
         OpportunityTriggerHandler.handleTripCreation(
             Trigger.new,
             Trigger.oldMap

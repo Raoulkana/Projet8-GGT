@@ -6,12 +6,7 @@ public with sharing class OpportunityTriggerHandler {
      * =========================
      */
     public static void beforeInsert(List<Opportunity> newList) {
-
-        if (newList == null || newList.isEmpty()) return;
-
-        for (Opportunity opp : newList) {
-            validateOpportunity(opp, true);
-        }
+        validateList(newList);
     }
 
     /*
@@ -23,86 +18,63 @@ public with sharing class OpportunityTriggerHandler {
         List<Opportunity> newList,
         Map<Id, Opportunity> oldMap
     ) {
-
-        if (newList == null || newList.isEmpty()) return;
-
-        for (Opportunity opp : newList) {
-
-            Opportunity oldOpp = oldMap != null ? oldMap.get(opp.Id) : null;
-
-            if (oldOpp != null &&
-                opp.StageName == 'Closed Won' &&
-                oldOpp.StageName != 'Closed Won') {
-
-                System.debug('Opportunity gagnée : ' + opp.Id);
-            }
-
-            validateOpportunity(opp, false);
-        }
+        validateList(newList);
     }
 
     /*
      * =========================
-     * HANDLE TRIP CREATION
+     * AFTER UPDATE
      * =========================
      */
     public static void handleTripCreation(
         List<Opportunity> newList,
         Map<Id, Opportunity> oldMap
     ) {
-        if (newList == null) return;
-
-        for (Opportunity opp : newList) {
-            validateOpportunity(opp, false);
-        }
+        // logique métier future
     }
 
     /*
      * =========================
-     * HANDLE DATE VALIDATION
+     * CORE VALIDATION
      * =========================
      */
-    public static void handleDateValidation(List<Opportunity> oppList) {
+    private static void validateList(List<Opportunity> oppList) {
 
         if (oppList == null || oppList.isEmpty()) return;
 
         for (Opportunity opp : oppList) {
-            validateOpportunity(opp, false);
+            validateOpportunity(opp);
         }
     }
 
     /*
      * =========================
-     * VALIDATION CORE (FIXED)
+     * VALIDATION BUSINESS RULES
      * =========================
      */
-    private static void validateOpportunity(Opportunity opp, Boolean isInsert) {
+    private static void validateOpportunity(Opportunity opp) {
 
-        if (opp == null) {
-            throw new AuraHandledException('Opportunity cannot be null');
+        if (opp == null) return;
+
+        // Nom obligatoire
+        if (String.isBlank(opp.Name)) {
+            opp.addError('Opportunity Name is required');
         }
 
-        // ⚠️ IMPORTANT : check SAFE sur insert + update
-        if (isInsert || opp.Name != null) {
-            if (String.isBlank(opp.Name)) {
-                throw new AuraHandledException('Opportunity Name is required');
-            }
+        // Stage obligatoire
+        if (String.isBlank(opp.StageName)) {
+            opp.addError('StageName is required');
         }
 
-        if (isInsert || opp.StageName != null) {
-            if (String.isBlank(opp.StageName)) {
-                throw new AuraHandledException('StageName is required');
-            }
+        // CloseDate obligatoire
+        if (opp.CloseDate == null) {
+            opp.addError('CloseDate is required');
+            return; // évite double validation inutile
         }
 
-        if (isInsert || opp.CloseDate != null) {
-            if (opp.CloseDate == null) {
-                throw new AuraHandledException('CloseDate is required');
-            }
-
-            if (opp.CloseDate < Date.today()) {
-                throw new AuraHandledException('CloseDate cannot be in the past');
-            }
+        // CloseDate dans le passé interdit
+        if (opp.CloseDate < Date.today()) {
+            opp.addError('CloseDate cannot be in the past');
         }
     }
 }

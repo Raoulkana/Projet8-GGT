@@ -1,10 +1,5 @@
 public with sharing class OpportunityManager {
 
-    /*
-     * =========================
-     * CREATE OPPORTUNITY
-     * =========================
-     */
     @AuraEnabled
     public static Opportunity createOpportunity(
         Id accountId,
@@ -13,8 +8,6 @@ public with sharing class OpportunityManager {
         String closeDate
     ) {
 
-        System.debug('OpportunityManager.createOpportunity');
-
         validateOpportunityInputs(
             accountId,
             opportunityName,
@@ -22,29 +15,18 @@ public with sharing class OpportunityManager {
             closeDate
         );
 
-        Date parsedCloseDate = parseDate(closeDate);
-
         Opportunity opp = new Opportunity(
             AccountId = accountId,
             Name = opportunityName,
             StageName = stageName,
-            CloseDate = parsedCloseDate
+            CloseDate = parseDate(closeDate)
         );
 
         insert opp;
 
-        System.debug(
-            'Opportunity créée avec succès : ' + opp.Id
-        );
-
         return opp;
     }
 
-    /*
-     * =========================
-     * UPDATE OPPORTUNITY
-     * =========================
-     */
     @AuraEnabled
     public static Opportunity updateOpportunity(
         Id opportunityId,
@@ -53,10 +35,9 @@ public with sharing class OpportunityManager {
         String closeDate
     ) {
 
-        System.debug('OpportunityManager.updateOpportunity');
-
         if (opportunityId == null) {
-            throw new AuraHandledException(
+
+            throwException(
                 'Opportunity ID is required'
             );
         }
@@ -77,25 +58,17 @@ public with sharing class OpportunityManager {
 
         update opp;
 
-        System.debug(
-            'Opportunity mise à jour : ' + opp.Id
-        );
-
         return opp;
     }
 
-    /*
-     * =========================
-     * DELETE OPPORTUNITY
-     * =========================
-     */
     @AuraEnabled
-    public static void deleteOpportunity(Id opportunityId) {
-
-        System.debug('OpportunityManager.deleteOpportunity');
+    public static void deleteOpportunity(
+        Id opportunityId
+    ) {
 
         if (opportunityId == null) {
-            throw new AuraHandledException(
+
+            throwException(
                 'Opportunity ID is required'
             );
         }
@@ -104,26 +77,16 @@ public with sharing class OpportunityManager {
             getOpportunityById(opportunityId);
 
         delete opp;
-
-        System.debug(
-            'Opportunity supprimée : ' + opportunityId
-        );
     }
 
-    /*
-     * =========================
-     * GET OPPORTUNITY BY ID
-     * =========================
-     */
     @AuraEnabled(cacheable=true)
     public static Opportunity getOpportunityById(
         Id opportunityId
     ) {
 
-        System.debug('OpportunityManager.getOpportunityById');
-
         if (opportunityId == null) {
-            throw new AuraHandledException(
+
+            throwException(
                 'Opportunity ID is required'
             );
         }
@@ -142,7 +105,7 @@ public with sharing class OpportunityManager {
 
         if (opportunities.isEmpty()) {
 
-            throw new AuraHandledException(
+            throwException(
                 'Opportunity not found'
             );
         }
@@ -150,26 +113,18 @@ public with sharing class OpportunityManager {
         return opportunities[0];
     }
 
-    /*
-     * =========================
-     * GET MULTIPLE OPPORTUNITIES
-     * =========================
-     */
     @AuraEnabled(cacheable=true)
-    public static List<Opportunity> getOpportunitiesById(
+    public static List<Opportunity>
+    getOpportunitiesById(
         List<Id> opportunityIds
     ) {
-
-        System.debug(
-            'OpportunityManager.getOpportunitiesById'
-        );
 
         if (
             opportunityIds == null ||
             opportunityIds.isEmpty()
         ) {
 
-            throw new AuraHandledException(
+            throwException(
                 'Opportunity IDs are required'
             );
         }
@@ -188,7 +143,7 @@ public with sharing class OpportunityManager {
 
     /*
      * =========================
-     * VALIDATION METHOD
+     * VALIDATION
      * =========================
      */
     private static void validateOpportunityInputs(
@@ -200,28 +155,28 @@ public with sharing class OpportunityManager {
 
         if (accountId == null) {
 
-            throw new AuraHandledException(
+            throwException(
                 'Account ID is required'
             );
         }
 
         if (String.isBlank(opportunityName)) {
 
-            throw new AuraHandledException(
+            throwException(
                 'Opportunity Name is required'
             );
         }
 
         if (String.isBlank(stageName)) {
 
-            throw new AuraHandledException(
+            throwException(
                 'Stage Name is required'
             );
         }
 
         if (String.isBlank(closeDate)) {
 
-            throw new AuraHandledException(
+            throwException(
                 'Close Date is required'
             );
         }
@@ -234,7 +189,9 @@ public with sharing class OpportunityManager {
      * DATE PARSER
      * =========================
      */
-    private static Date parseDate(String dateValue) {
+    private static Date parseDate(
+        String dateValue
+    ) {
 
         try {
 
@@ -242,9 +199,28 @@ public with sharing class OpportunityManager {
 
         } catch (Exception e) {
 
-            throw new AuraHandledException(
+            throwException(
                 'Invalid date format'
             );
+
+            return null;
         }
     }
+
+    /*
+     * =========================
+     * EXCEPTION HELPER
+     * =========================
+     */
+   private static void throwException(
+    String message
+   ) {     
+
+    AuraHandledException ex =
+        new AuraHandledException(message);
+
+    ex.setMessage(message);
+
+    throw ex;
+}
 }
